@@ -72,4 +72,8 @@ spec:
       - name: args
         value: "-v --with-spec --spec-color"
       runAfter:
+<<<<<<< HEAD
         - clone
+=======
+        - clone
+>>>>>>> origin/cd-pipeline
