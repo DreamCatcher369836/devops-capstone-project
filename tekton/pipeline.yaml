@@ -59,3 +59,21 @@ spec:
           value: "Pipeline completed successfully!"
       runAfter:
         - lint
+
+    - name: tests
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: nose
+      params:
+      - name: database_uri
+        value: "sqlite:///test.db"
+      - name: args
+        value: "-v --with-spec --spec-color"
+      runAfter:
+<<<<<<< HEAD
+        - clone
+=======
+        - clone
+>>>>>>> origin/cd-pipeline
