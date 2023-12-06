@@ -26,11 +26,14 @@ spec:
           workspace: pipeline-workspace
       taskRef:
         name: git-clone
-      params:
+        params:
         - name: url
-          value: "$(params.repo-url)"
+          valueFrom:
+            expression: "$(params.repo-url)"
         - name: revision
-          value: "$(params.branch)"
+          valueFrom:
+            expression: "$(params.branch)"
+
       runAfter:
         - init
 
@@ -73,3 +76,18 @@ spec:
         value: "-v --with-spec --spec-color"
       runAfter:
         - clone
+        
+        - name: build
+          workspaces:
+            - name: source
+              workspace: pipeline-workspace
+          taskRef:
+            name: buildah
+            kind: ClusterTask
+          params:
+          - name: IMAGE
+            value: "$(params.build-image)"
+          runAfter:
+            - tests
+            - lint
+
