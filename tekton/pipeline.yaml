@@ -12,6 +12,9 @@ spec:
     - name: branch
       type: string
       default: main
+    - name: build-image  # Added missing parameter for build image
+      type: string
+      default: "registry.example.com/my-app:latest"  # Replace with your default build image
   tasks:
     - name: init
       workspaces:
@@ -22,17 +25,20 @@ spec:
 
     - name: clone
       workspaces:
-        - name: output
-          workspace: pipeline-workspace
-      taskRef:
-        name: git-clone
-      params:
-        - name: url
-          value: "$(params.repo-url)"
-        - name: revision
-          value: "$(params.branch)"
-      runAfter:
-        - init
+    - name: output
+      workspace: pipeline-workspace
+  taskRef:
+    name: git-clone
+  resources:
+    inputs:
+    - name: source
+      resource: $(params.repo-url)
+    outputs:
+    - name: output
+      resource: $(params.branch)
+  runAfter:
+    - init
+
 
     - name: lint
       workspaces:
@@ -46,7 +52,7 @@ spec:
         - name: args
           value: ["--count","--max-complexity=10","--max-line-length=127","--statistics"]
       runAfter:
-        - clone  # Corrected indentation
+        - clone
 
     - name: print-message
       workspaces:
@@ -67,9 +73,42 @@ spec:
       taskRef:
         name: nose
       params:
-      - name: database_uri
-        value: "sqlite:///test.db"
-      - name: args
-        value: "-v --with-spec --spec-color"
+        - name: database_uri
+          value: "sqlite:///test.db"
+        - name: args
+          value: "-v --with-spec --spec-color"
       runAfter:
         - clone
+
+    - name: build  # Corrected indentation
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      taskRef:
+        name: buildah
+        kind: ClusterTask
+      params:
+        - name: IMAGE
+          value: "$(params.build-image)"
+      runAfter:
+        - tests
+        - lint
+
+    - name: deploy  # Corrected indentation
+      workspaces:
+        - name: manifest-dir
+          workspace: pipeline-workspace
+      taskRef:
+        name: openshift-client
+        kind: ClusterTask
+      params:
+        - name: SCRIPT
+          value: |
+            echo "Updating manifest..."
+            sed -i "s|IMAGE_NAME_HERE|$(params.build-image)|g" deploy/deployment.yaml
+            cat deploy/deployment.yaml
+            echo "Deploying to OpenShift..."
+            oc apply -f deploy/
+            oc get pods -l app=accounts
+      runAfter:
+        - build
