@@ -5,15 +5,23 @@ import os
 
 
 # Get configuration from environment
-DATABASE_URI = os.getenv("DATABASE_URI")
+# Default to a local SQLite database so the service can run without
+# requiring a PostgreSQL server.  CI pipelines override this with the
+# appropriate value when needed.
+DATABASE_URI = os.getenv("DATABASE_URI", "sqlite:///development.db")
 
-# Build DATABASE_URI from environment if not found
-if not DATABASE_URI:
-    DATABASE_USER = os.getenv("DATABASE_USER", "postgres")
-    DATABASE_PASSWORD = os.getenv("DATABASE_PASSWORD", "postgres")
-    DATABASE_NAME = os.getenv("DATABASE_NAME", "postgres")
-    DATABASE_HOST = os.getenv("DATABASE_HOST", "localhost")
-    DATABASE_URI = f"postgresql://{DATABASE_USER}:{DATABASE_PASSWORD}@{DATABASE_HOST}:5432/{DATABASE_NAME}"
+# Build DATABASE_URI from other environment variables if provided and no
+# explicit DATABASE_URI was set
+if DATABASE_URI == "sqlite:///development.db":
+    database_user = os.getenv("DATABASE_USER")
+    if database_user:
+        database_password = os.getenv("DATABASE_PASSWORD", "postgres")
+        database_name = os.getenv("DATABASE_NAME", "postgres")
+        database_host = os.getenv("DATABASE_HOST", "localhost")
+        DATABASE_URI = (
+            f"postgresql://{database_user}:{database_password}@"
+            f"{database_host}:5432/{database_name}"
+        )
 
 # Configure SQLAlchemy
 SQLALCHEMY_DATABASE_URI = DATABASE_URI
