@@ -15,7 +15,7 @@ from service.routes import app
 from service import talisman
 
 DATABASE_URI = os.getenv(
-    "DATABASE_URI", "postgresql://postgres:postgres@localhost:5432/postgres"
+    "DATABASE_URI", "sqlite:///test.db"
 )
 HTTPS_ENVIRON = {'wsgi.url_scheme': 'https'}
 BASE_URL = "/accounts"
